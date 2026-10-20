@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kącik Czystości ASEPTIK - Zamówienie</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f9;
+            color: #333;
+            margin: 0 auto;
+            padding: 15px;
+            max-width: 800px;
+            background-image: url('tlo.jpeg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+        }
+
+        .header-container {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        h2, h3 {
+            color: #2c3e50;
+            text-align: center;
+            margin: 5px 0;
+        }
+
+        /* Grid z produktami */
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .product-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            padding-bottom: 10px;
+        }
+        .product-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+        }
+        .product-card img {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            border-bottom: 1px solid #eee;
+            background-color: #fff;
+        }
+        .product-card h4 {
+            font-size: 14px;
+            margin: 10px 5px 5px 5px;
+            color: #333;
+        }
+
+        /* Tabela zamówień */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+            margin-bottom: 20px;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th { background-color: rgba(248, 249, 250, 0.95); }
+
+        /* Przyciski */
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-bottom: 15px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .btn-success { background-color: #2ecc71; }
+        .btn-success:hover { background-color: #27ae60; }
+        .btn-danger {
+            background-color: #e74c3c;
+            padding: 5px 10px;
+            font-size: 14px;
+            width: auto;
+            display: inline-block;
+            margin-bottom: 0;
+        }
+        .btn-danger:hover { background-color: #c0392b; }
+
+        /* Modal wyboru ilości */
+        #quantityModal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            width: 85%;
+            max-width: 320px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .modal-content input {
+            width: 90px;
+            padding: 8px;
+            font-size: 20px;
+            text-align: center;
+            margin: 15px 0;
+            border: 2px solid #3498db;
+            border-radius: 6px;
+        }
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .modal-buttons .btn { margin-bottom: 0; }
+        .btn-cancel { background-color: #95a5a6; }
+        .btn-cancel:hover { background-color: #7f8c8d; }
+    </style>
+</head>
+<body>
+
+<div class="header-container">
+    <h2>Kącik Czystości ASEPTIK - Zamówienie</h2>
+</div>
+
+<!-- Lista produktów (kafelki ze zdjęciami) -->
+<div class="products-grid" id="productsGrid"></div>
+
+<div class="header-container">
+    <h3>Bieżąca lista do zamówienia</h3>
+</div>
+
+<table>
+    <thead>
+        <tr>
+            <th>Produkt</th>
+            <th>Ilość</th>
+            <th>Akcja</th>
+        </tr>
+    </thead>
+    <tbody id="cartTableBody"></tbody>
+</table>
+
+<button class="btn btn-success" onclick="sendEmail()">Wygeneruj zamówienie (E-mail)</button>
+
+<!-- Modal do wyboru ilości -->
+<div id="quantityModal">
+    <div class="modal-content">
+        <h4 id="modalProductName">Produkt</h4>
+        <p>Podaj ilość:</p>
+        <input type="number" id="modalQtyInput" value="1" min="1" max="9999" step="1"><br>
+        <div class="modal-buttons">
+            <button class="btn btn-cancel" onclick="closeModal()">Anuluj</button>
+            <button class="btn btn-success" onclick="confirmQuantity()">Potwierdź</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Adres odbiorcy zamówienia
+    const ORDER_EMAIL = "m.marmuzniak@maspex.com";
+    const ORDER_SUBJECT = "Zamówienie z Kącika Czystości ASEPTIK";
+
+    // Baza produktów. Po zmianie nazw plików w folderze TOWAR/ zaktualizuj poniższe ścieżki.
+    const products = [
+        { id: "RĘKAWICZKI LATEKSOWE XL",         name: "Rękawiczki Lateksowe XL",         image: "TOWAR/Rękawiczki jednorazowe lateksowe XL.jpg" },
+        { id: "RĘKAWICZKI LATEKSOWE L",          name: "Rękawiczki Lateksowe L",          image: "TOWAR/Rękawiczki jednorazowe lateksowe L.jpg" },
+        { id: "RĘKAWICZKI LATEKSOWE M",          name: "Rękawiczki Lateksowe M",          image: "TOWAR/Rękawiczki jednorazowe lateksowe M.jpg" },
+        { id: "RĘKAWICZKI LATEKSOWE S",          name: "Rękawiczki Lateksowe S",          image: "TOWAR/Rękawiczki jednorazowe lateksowe S.jpg" },
+        { id: "RĘKAWICZKI WAMPIRKI",             name: "Rękawiczki wampirki",             image: "TOWAR/Rękawiczki Wampirki.jpg" },
+        { id: "RĘKAWICZKI WARSZTATOWE",          name: "Rękawiczki warsztatowe",          image: "TOWAR/Rekawiczki warsztatowe.jpg" },
+        { id: "RĘKAWICZKI WARSZTATOWE SKÓRZANE", name: "Rękawiczki warsztatowe skórzane", image: "TOWAR/Rekawiczki warsztatowe skórzane.jpg" }
+    ];
+
+    // Lokalny obrazek zastępczy (SVG w kodzie, działa bez internetu)
+    const PLACEHOLDER_IMG = "data:image/svg+xml;utf8," + encodeURIComponent(
+        '<svg xmlns="http://www.w3.org/2000/svg" width="150" height="120">' +
+        '<rect width="100%" height="100%" fill="#eceff1"/>' +
+        '<text x="50%" y="50%" font-family="Arial" font-size="14" fill="#90a4ae" ' +
+        'text-anchor="middle" dominant-baseline="middle">Brak zdjęcia</text></svg>'
+    );
+
+    let cart = [];
+    let selectedProduct = null;
+
+    // Zabezpieczenie przed wstrzyknięciem HTML w nazwach
+    function escapeHtml(text) {
+        const div = document.createElement("div");
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // Generowanie kafelków z produktami
+    function renderProducts() {
+        const grid = document.getElementById("productsGrid");
+        grid.innerHTML = "";
+
+        products.forEach(product => {
+            const card = document.createElement("div");
+            card.className = "product-card";
+            card.onclick = () => openQuantityModal(product);
+
+            const img = document.createElement("img");
+            img.src = encodeURI(product.image);
+            img.alt = product.name;
+            img.onerror = function () {
+                this.onerror = null; // zapobiega pętli błędów
+                this.src = PLACEHOLDER_IMG;
+            };
+
+            const title = document.createElement("h4");
+            title.textContent = product.name;
+
+            card.appendChild(img);
+            card.appendChild(title);
+            grid.appendChild(card);
+        });
+    }
+
+    function openQuantityModal(product) {
+        selectedProduct = product;
+        document.getElementById("modalProductName").textContent = product.name;
+        const input = document.getElementById("modalQtyInput");
+        input.value = 1; // domyślnie 1
+        document.getElementById("quantityModal").style.display = "flex";
+        input.focus();
+        input.select();
+    }
+
+    function closeModal() {
+        document.getElementById("quantityModal").style.display = "none";
+        selectedProduct = null;
+    }
+
+    function confirmQuantity() {
+        if (!selectedProduct) return;
+
+        let qty = parseInt(document.getElementById("modalQtyInput").value, 10);
+        if (isNaN(qty) || qty < 1) qty = 1;
+
+        // Jeśli produkt już jest na liście – zwiększ ilość, w przeciwnym razie dodaj nowy
+        const existing = cart.find(item => item.id === selectedProduct.id);
+        if (existing) {
+            existing.qty += qty;
+        } else {
+            cart.push({ id: selectedProduct.id, name: selectedProduct.name, qty: qty });
+        }
+
+        closeModal();
+        updateCartTable();
+    }
+
+    // Enter = potwierdź, Esc = anuluj
+    document.getElementById("modalQtyInput").addEventListener("keydown", function (e) {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            confirmQuantity();
+        } else if (e.key === "Escape") {
+            closeModal();
+        }
+    });
+
+    // Kliknięcie w ciemne tło zamyka okno
+    document.getElementById("quantityModal").addEventListener("click", function (e) {
+        if (e.target === this) closeModal();
+    });
+
+    function updateCartTable() {
+        const tbody = document.getElementById("cartTableBody");
+        if (cart.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: #777;">Kliknij produkt na górze, aby go dodać</td></tr>';
+            return;
+        }
+
+        let html = "";
+        cart.forEach((item, index) => {
+            html += `<tr>
+                <td>${escapeHtml(item.name)}</td>
+                <td><b>${item.qty}</b> szt.</td>
+                <td><button class="btn btn-danger" onclick="removeItem(${index})">Usuń</button></td>
+            </tr>`;
+        });
+        tbody.innerHTML = html;
+    }
+
+    function removeItem(index) {
+        cart.splice(index, 1);
+        updateCartTable();
+    }
+
+    // Treść zamówienia (nowe linie w formacie przyjaznym dla Outlooka)
+    function buildBody() {
+        let text = "Dzień dobry,\r\n\r\nProszę o zamówienie następujących pozycji:\r\n\r\n";
+        cart.forEach(item => {
+            text += `- ${item.name} - ${item.qty} szt.\r\n`;
+        });
+        text += "\r\nPozdrawiam";
+        return text;
+    }
+
+    function checkCart() {
+        if (cart.length === 0) {
+            alert("Lista zamówień jest pusta. Wybierz przynajmniej jeden produkt.");
+            return false;
+        }
+        return true;
+    }
+
+    // Domyślny program pocztowy (jeśli Outlook jest domyślnym – otworzy Outlooka)
+    function sendEmail() {
+        if (!checkCart()) return;
+        const link = `mailto:${ORDER_EMAIL}?subject=${encodeURIComponent(ORDER_SUBJECT)}&body=${encodeURIComponent(buildBody())}`;
+        window.location.href = link;
+    }
+
+    // Inicjalizacja
+    renderProducts();
+    updateCartTable();
+</script>
+
+</body>
+</html>
