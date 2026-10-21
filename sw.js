@@ -1,6 +1,6 @@
 // Service worker - Kącik Czystości ASEPTIK
 // Po większej zmianie plików zwiększ numer wersji poniżej.
-const CACHE_VERSION = "v1";
+const CACHE_VERSION = "v2";
 const CACHE_NAME = "kacik-czystosci-" + CACHE_VERSION;
 
 // Pliki podstawowe. Dodawane pojedynczo, więc brak któregoś pliku
