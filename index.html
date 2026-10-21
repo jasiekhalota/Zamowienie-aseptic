@@ -4,6 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kącik Czystości ASEPTIK - Zamówienie</title>
+
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#2c3e50">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Kącik Czystości">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="icon" type="image/png" href="icons/icon-192.png">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+
     <style>
         * {
             box-sizing: border-box;
@@ -20,6 +31,37 @@
             background-position: center;
             background-attachment: fixed;
             background-repeat: no-repeat;
+        }
+
+        /* Pasek instalacji aplikacji (u góry strony) */
+        #installBar {
+            display: none;
+            background: linear-gradient(135deg, #2ecc71, #1f7a54);
+            color: #fff;
+            border-radius: 8px;
+            padding: 12px 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+            text-align: center;
+        }
+        #installBar p {
+            margin: 0 0 10px 0;
+            font-size: 15px;
+        }
+        #installBar .btn {
+            background-color: #fff;
+            color: #1f7a54;
+            margin-bottom: 0;
+        }
+        #installBar .btn:hover { background-color: #f0f0f0; }
+        #installHint {
+            display: none;
+            margin: 10px 0 0 0;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        @media (display-mode: standalone) {
+            #installBar { display: none !important; }
         }
 
         .header-container {
@@ -154,6 +196,13 @@
 </head>
 <body>
 
+<!-- Pasek instalacji aplikacji -->
+<div id="installBar">
+    <p>📲 Zainstaluj aplikację na swoim urządzeniu, aby mieć ją zawsze pod ręką.</p>
+    <button class="btn" id="installBtn" type="button">Zainstaluj aplikację</button>
+    <p id="installHint"></p>
+</div>
+
 <div class="header-container">
     <h2>Kącik Czystości ASEPTIK - Zamówienie</h2>
 </div>
@@ -205,10 +254,10 @@
         { id: "RĘKAWICZKI WAMPIRKI",             name: "Rękawiczki wampirki",             image: "TOWAR/Rękawiczki Wampirki.jpg" },
         { id: "RĘKAWICZKI WARSZTATOWE",          name: "Rękawiczki warsztatowe",          image: "TOWAR/Rekawiczki warsztatowe.jpg" },
         { id: "RĘKAWICZKI WARSZTATOWE SKÓRZANE", name: "Rękawiczki warsztatowe skórzane", image: "TOWAR/Rekawiczki warsztatowe skórzane.jpg" },
-		{ id: "RĘKAWICZKI GUMOWE", 				name: "Rękawiczki gumowe", 					image: "TOWAR/Rękawiczki gumowe długie.jpg" },
-		{ id: "PŁYN DO SZYB", 			   		name: "Płyn do szyb", 						image: "TOWAR/Płyn do szyb.jpg" },
-		{ id: "MLECZKO DO CZYSZCZENIA", 		name: "Mleczko do czyszczenia", 			image: "TOWAR/Mleczko do czyszczenia.jpg" },
-		{ id: "GĄBKA DO MYCIA", 				name: "Gąbka do mycia 1641", 				image: "TOWAR/Gąbka do mycia.jpg" },
+        { id: "RĘKAWICZKI GUMOWE",               name: "Rękawiczki gumowe",               image: "TOWAR/Rękawiczki gumowe długie.jpg" },
+        { id: "PŁYN DO SZYB",                    name: "Płyn do szyb",                    image: "TOWAR/Płyn do szyb.jpg" },
+        { id: "MLECZKO DO CZYSZCZENIA",          name: "Mleczko do czyszczenia",          image: "TOWAR/Mleczko do czyszczenia.jpg" },
+        { id: "GĄBKA DO MYCIA",                  name: "Gąbka do mycia 1641",             image: "TOWAR/Gąbka do mycia.jpg" }
     ];
 
     // Lokalny obrazek zastępczy (SVG w kodzie, działa bez internetu)
@@ -345,11 +394,71 @@
         return true;
     }
 
-    // Domyślny program pocztowy (jeśli Outlook jest domyślnym – otworzy Outlooka)
+    // Domyślny program pocztowy w urządzeniu
     function sendEmail() {
         if (!checkCart()) return;
         const link = `mailto:${ORDER_EMAIL}?subject=${encodeURIComponent(ORDER_SUBJECT)}&body=${encodeURIComponent(buildBody())}`;
         window.location.href = link;
+    }
+
+    // ===== Instalacja aplikacji (PWA) =====
+    let deferredInstallPrompt = null;
+    const installBar = document.getElementById("installBar");
+    const installBtn = document.getElementById("installBtn");
+    const installHint = document.getElementById("installHint");
+
+    function isStandalone() {
+        return window.matchMedia("(display-mode: standalone)").matches ||
+               window.navigator.standalone === true;
+    }
+
+    function isIos() {
+        return /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+               (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    }
+
+    function showInstallBar() {
+        if (!isStandalone()) installBar.style.display = "block";
+    }
+
+    function hideInstallBar() {
+        installBar.style.display = "none";
+    }
+
+    // Android / Chrome / Edge: przeglądarka zgłasza gotowość do instalacji
+    window.addEventListener("beforeinstallprompt", function (e) {
+        e.preventDefault();
+        deferredInstallPrompt = e;
+        showInstallBar();
+    });
+
+    installBtn.addEventListener("click", async function () {
+        if (deferredInstallPrompt) {
+            deferredInstallPrompt.prompt();
+            const choice = await deferredInstallPrompt.userChoice;
+            deferredInstallPrompt = null;
+            if (choice.outcome === "accepted") hideInstallBar();
+        } else if (isIos()) {
+            // iPhone / iPad: instalacja tylko ręcznie z menu Udostępnij
+            installHint.textContent =
+                "Stuknij ikonę „Udostępnij” (kwadrat ze strzałką) w przeglądarce Safari, " +
+                "a następnie wybierz „Do ekranu początkowego”.";
+            installHint.style.display = "block";
+        }
+    });
+
+    window.addEventListener("appinstalled", hideInstallBar);
+
+    // iOS nie zgłasza zdarzenia beforeinstallprompt - pokaż pasek z instrukcją
+    if (isIos() && !isStandalone()) showInstallBar();
+
+    // Service worker (praca offline i możliwość instalacji)
+    if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
+        window.addEventListener("load", function () {
+            navigator.serviceWorker.register("sw.js").catch(function (err) {
+                console.warn("Nie udało się zarejestrować service workera:", err);
+            });
+        });
     }
 
     // Inicjalizacja
