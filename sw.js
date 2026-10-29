@@ -37,7 +37,7 @@ self.addEventListener("activate", (event) => {
             .map((k) => caches.delete(k))
         )
       )
-      .then(() => self.clients.claim())
+           .then(() => self.clients.claim())
   );
 });
 
@@ -79,4 +79,4 @@ self.addEventListener("fetch", (event) => {
       return cached || network;
     })
   );
-});
+}); 
